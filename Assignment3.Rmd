@@ -1,0 +1,167 @@
+---
+title: "Assignment 3 Machine Learning"
+author: "RADHA KRISHNAN M"
+date: "2022-11-02"
+output: html_document
+---
+
+
+```{r}
+library(ISLR)
+```
+
+```{r}
+Auto
+```
+
+
+1.(a) Create a binary variable, mpg01, that contains a 1 if mpg contains a value above its median, and a 0 if mpg contains a value below its median. You can compute the median using the median() function. Note you may find it helpful to use the data.frame() function to create a single data set containing both mpg01 and the other Auto variables.
+
+```{r}
+attach(Auto)
+mpg01 <- rep(0, length(mpg))
+mpg01[mpg > median(mpg)] <- 1 
+Auto_mpg01 <- data.frame(Auto, mpg01)
+dim(Auto_mpg01)
+head(Auto_mpg01[, -9])
+attach(Auto_mpg01)
+```
+
+Ans:
+  create binary variable is mpg01 and find the meadian then combine the binary variable mpg01.
+  
+  
+
+ (b) Explore the data graphically in order to investigate the association between mpg01 and the other features. Which of the other features seem most likely to be useful in predicting mpg01? Scatterplots and boxplots may be useful tools to answer this question. Describe your findings.
+ 
+```{r}
+cor(Auto_mpg01[, -9])
+cols <- character(nrow(Auto_mpg01))
+cols[] <- "black"
+cols[Auto_mpg01$mpg01 == 1] <- "red"
+cols[Auto_mpg01$mpg01 == 0] <- "blue"
+pairs(Auto_mpg01, col=cols)
+```
+ 
+ 
+```{r}
+par(mfrow=c(2,3))
+boxplot(weight ~ mpg01, data = Auto_mpg01, main = "Weight", 
+        xlab = "mpg01", ylab = "Weight",
+        col = c("red", "blue"))
+boxplot(year ~ mpg01, data = Auto_mpg01, main = "Year", 
+        xlab = "mpg01", ylab = "Year",
+        col = c("red", "blue"))
+boxplot(cylinders ~ mpg01, data = Auto_mpg01, main = "Cylinders", 
+        xlab = "mpg01", ylab = "Cylinders",
+        col = c("red", "blue"))
+boxplot(acceleration ~ mpg01, data = Auto_mpg01, main = "Acceleration", 
+        xlab = "mpg01", ylab = "Acceleration",
+        col = c("red", "blue"))
+boxplot(displacement ~ mpg01, data = Auto_mpg01, main = "Displacement", 
+        xlab = "mpg01", ylab = "Displacement",
+        col = c("red", "blue"))
+boxplot(horsepower ~ mpg01, data = Auto_mpg01, main = "Horsepower", 
+        xlab = "mpg01", ylab = "Horsepower",
+        col = c("red", "blue"))
+```
+ 
+ Ans:
+ cylinders, weight, displacement, horsepower and mpg itself.
+ 
+ 
+ (c)	 Split the data into a training set and a test set.
+ 
+```{r}
+train <- (year %% 2 == 0)
+Auto_mpg01.train <- Auto_mpg01[train, ]
+Auto_mpg01.test <- Auto_mpg01[!train, ]
+mpg01.test <- mpg01[!train]
+```
+ 
+ Ans:
+ using the module operator to split the data training and test.
+ 
+ 
+ (d)	Perform LDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained? 
+ 
+ 
+```{r}
+library(MASS)
+```
+ 
+ 
+```{r}
+fit.lda <- lda(mpg01 ~ cylinders + weight + displacement + horsepower,data = Auto_mpg01, subset = train)
+fit.lda
+plot(fit.lda)
+lda.class <- predict(fit.lda, Auto_mpg01.test)$class
+table(lda.class, mpg01.test)
+mean(lda.class != mpg01.test)
+```
+ 
+ Ans:
+  test error rate is 12.6%.
+  
+  
+(e)	Perform QDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained? 
+
+```{r}
+qda.fit <- qda(mpg01 ~ cylinders + weight + displacement + horsepower, 
+               data = Auto_mpg01, subset = train)
+qda.fit
+qda.class <- predict(qda.fit, Auto_mpg01.test)$class
+table(qda.class, mpg01.test)
+mean(qda.class != mpg01.test)
+```
+
+Ans:
+  the analysis of test error rate is 13.2%
+
+
+(f)	Perform logistic regression on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+
+```{r}
+glm.fit <- glm(mpg01 ~ cylinders + weight + displacement + horsepower, data = Auto_mpg01, family = binomial, subset = train)
+summary(glm.fit)
+probs <- predict(glm.fit, Auto_mpg01.test, type = "response")
+glm.pred <- rep(0, length(probs))
+glm.pred[probs > 0.5] <- 1
+table(glm.pred, mpg01.test)
+mean(glm.pred != mpg01.test)
+```
+
+Ans:
+  test error rate is 12.1%.
+  
+  
+  
+(g)	Perform KNN on the training data, with several values of K, in order to predict mpg01. Use only the variables that seemed most associated with mpg01 in (b). What test errors do you obtain? Which value of K seems to perform the best on this data set?
+
+```{r}
+library(class)
+```
+
+
+```{r}
+train.X <- cbind(cylinders, weight, displacement, horsepower)[train, ]
+test.X <- cbind(cylinders, weight, displacement, horsepower)[!train, ]
+train.mpg01 <- mpg01[train]
+
+set.seed(12345)
+knn.pred.1 <- knn(train.X, test.X, train.mpg01, k = 1)
+table(knn.pred.1, mpg01.test)
+mean(knn.pred.1 != mpg01.test)
+```
+Ans:
+  k=1, the test error rate is 15.4%
+
+
+```{r}
+set.seed(12345)
+knn.pred.5 <- knn(train.X, test.X, train.mpg01, k = 5)
+table(knn.pred.5, mpg01.test)
+mean(knn.pred.5 != mpg01.test)
+```
+Ans:
+  k=5, the test error rate is 14.9%
